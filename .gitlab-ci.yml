@@ -1,0 +1,36 @@
+stages:
+  - build
+  - deploy
+  - notify
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_TLS_CERTDIR: ""
+
+build:
+  stage: build
+  image: docker:20.10
+  services:
+    - docker:20.10-dind
+  script:
+    - docker build -t uptime-kuma:latest .
+
+deploy:
+  stage: deploy
+  image: docker/compose:1.29.2
+  services:
+    - docker:20.10-dind
+  script:
+    - docker-compose down
+    - docker-compose up -d
+  only:
+    - master
+
+notify:
+  stage: notify
+  image: python:3.9
+  script:
+    - pip install twilio
+    - python alert_script.py
+  only:
+    - master
